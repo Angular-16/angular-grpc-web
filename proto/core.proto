@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package ru.sigma.scp.core.api;
+
+option java_package = "ru.sigma.scp.core.grpc";
+option java_multiple_files = true;
+
+// import "google/protobuf/any.proto";
+// import "google/protobuf/empty.proto";
+
+// Ошибка валидации.
+message ValidationErrorMessage {
+  string field = 1;
+  optional string message = 2;
+}
+
+// Ошибка приложения.
+message ApplicationErrorMessage {
+  string code = 1 [deprecated = true];
+  optional string message = 2;
+  optional string cause = 3;
+  repeated ValidationErrorMessage data = 4;
+  int32 statusCode = 5;
+}
+
+// UUID поле.
+message UUIDMessage {
+  string value = 1;
+}
+
+// Поле даты и времени.
+message TimestampMessage {
+  int64 value = 1;
+}
+
+// Числа с плавающей запятой.
+message BigDecimalMessage {
+  int64 number = 1;
+  int32 scale = 2;
+}
+
+// Большие целые чисел.
+message BigIntegerMessage {
+  bytes value = 1;
+}
+
+// Поле даты (год-месяц-день) отдельными полями для решения проблемы с часовыми поясами.
+message DateMessage {
+  // year like 2022
+  int32 year = 1;
+  // month from 1 to 12
+  int32 month = 2;
+  // day fom 1 to 31
+  int32 day = 3;
+}
+
+// Модель периода даты.
+message DatePeriodMessage {
+  DateMessage dateFrom = 1;
+  DateMessage dateTo = 2;
+}
+
+// Модель Json.
+message JsonMessage {
+  optional string value = 1;
+}
+
+// для передачи UserInfo в контексте grpc запросов
+message UserInfoMessage {
+  optional int64 userId = 1;
+  optional string contextCode = 2;
+}
+
+// для передачи AdminUserInfo в контексте grpc запросов
+message AdminUserInfoMessage {
+  int64 userId = 1;
+  int64 roleId = 2;
+  int64 contractorId = 3;
+  string contextCode = 4;
+}

@@ -1,0 +1,289 @@
+syntax = "proto3";
+
+package ru.sigma.scp.file.api;
+
+option java_package = "ru.sigma.scp.file.grpc";
+option java_multiple_files = true;
+
+import "google/protobuf/empty.proto";
+// import "ru/sigma/scp/core/api/core.proto";
+import "core.proto";
+
+// Сообщение для передачи файла, содержит в себе FileChunk(file-content) и LoadFileInfo(file-metadata)
+// Вначале передается метаинформация файла, а после содержимое (server-side streaming)
+message LoadFileMessage {
+  oneof fileData {
+    FileChunk chunk = 1;
+    LoadFileInfo fileInfo = 2;
+  }
+}
+
+// Сообщение для передачи файла, содержит в себе FileChunk(file-content) и SaveFileInfo(file-metadata)
+// Вначале передается метаинформация файла, а после содержимое (client-side streaming)
+message SaveFileMessage {
+  oneof fileData {
+    FileChunk chunk = 1;
+    SaveFileInfo fileInfo = 2;
+  }
+}
+
+// Байтовые "куски" содержимого файла, которые будут передаваться в getFileContent
+message FileChunk {
+  bytes data = 1;
+}
+
+// Метаданные при получении данных
+message LoadFileInfo {
+  string uuid = 1;
+  string name = 2;
+  optional string extension = 3;
+  string contentType = 4;
+  //Идентификатор файла
+  int64 id = 5;
+  //Дата создания
+  ru.sigma.scp.core.api.TimestampMessage creationDate = 6;
+  //Время жизни временного файла
+  int64 lifetimeInMinutes = 7;
+
+  repeated FileAttributeMessage fileAttributes = 8;
+}
+
+// Метаданные при сохранении файлов
+message SaveFileInfo {
+  string fileName = 1;
+  int64 duration = 2;
+  map<string, string> attributes = 3;
+  ru.sigma.scp.core.api.UUIDMessage uuid = 4;
+}
+
+// Аттрибуты файла
+message FileAttributesMessage {
+  map<string, string> attributes = 1;
+}
+
+// Модель запроса добавления аттрибутов файла по UUID
+message FileAttributesRequest {
+  //Аттрибуты файла
+  map<string, string> attributes = 1;
+  //Универсальный уникальный идентификатор файла
+  string uuid = 2;
+}
+
+// UUID в виде списка
+message ListUuidMessage {
+  repeated string uuids = 1;
+}
+
+// Модель запроса добавления файлу аттрибутов цифровой подписи
+message SignFileRequest {
+  //Идентификатор файла
+  string uuid = 1;
+  //Аттрибуты файла для подписи
+  map<string, string> attributes = 4;
+}
+
+// Модель запроса на отказ от подписи файла
+message RefuseToSignRequest {
+  //Универсальный уникальный идентификатор файла
+  string uuid = 1;
+  //Тип подписывающего (клиент или компания)
+  string signerType = 2;
+}
+
+// Модель подписи
+message SignatureContainer {
+  //Флаг необходимости подписи компании / клиента
+  optional bool necessityAttr = 1;
+  //Сигнатура подписи компании / клиента
+  optional string sgnAttr = 2;
+  //Хеш подписи компании / клиента
+  optional string hashAttr = 3;
+}
+
+// Модель всех подписей файла
+message SignsMessage {
+  //Подпись клиента
+  SignatureContainer client = 1;
+  //Подпись компании
+  SignatureContainer company = 2;
+}
+
+// Модель списка файлов (без содержимого)
+message SignedFileListResponse{
+  repeated SignedFileMessage files = 1;
+}
+
+// Информация о файле, дополненная его подписями.
+message SignedFileMessage {
+  //Подписи
+  SignsMessage signs = 1;
+  //Идентификатор файла
+  int64 id = 2;
+  //Наименование файла
+  string name = 3;
+  //UUID файла
+  string uuid = 4;
+}
+
+// Данные о файле вложения обращения
+message FileInfoResponse {
+  //Универсальный уникальный идентификатор файла
+  string uuid = 1;
+  //Название файла
+  string name = 2;
+  //Наименование расширения
+  string extension = 3;
+  //Медиа тип
+  string contentType = 4;
+  //Аттрибуты файла
+  map<string, string> attributes = 5;
+  //Идентификатор файла
+  int64 id = 6;
+  //Дата создания
+  ru.sigma.scp.core.api.TimestampMessage creationDate = 7;
+  //Время жизни временного файла
+  int64 lifetimeInMinutes = 8;
+}
+
+message FileContentTypeRequest {
+  string contentType = 1;
+}
+
+message FileExtensionResponse {
+  string extension = 1;
+}
+
+message FilePresentResponse {
+  bool isFileExist = 1;
+}
+
+message SearchFileRequest {
+    FileSearchParamsMessage params = 1;
+    optional int32 offset = 2;
+    optional int32 limit = 3;
+}
+
+message FileSearchParamsMessage {
+  repeated string edmIds = 1;
+  repeated int64 ids = 2;
+  repeated string externalIds = 3;
+  optional bool needSign = 4;
+  optional string extension = 5;
+  repeated FileAttributeParamMessage attributes = 6;
+}
+
+message FileAttributeParamMessage {
+  string type = 1;
+  string value = 2;
+  bool like = 3;
+}
+
+message FileInfoListResponse {
+  repeated FileInfoResponse fileInfo = 1;
+}
+
+
+
+message FileAttributeMessage {
+  int64 id = 1;
+  string type = 2;
+  string value = 3;
+}
+
+message RemoveAttributesRequest {
+  ru.sigma.scp.core.api.UUIDMessage uuid = 1;
+  repeated string attributes = 2;
+}
+
+message SetLifetimeRequest {
+  repeated string uuids = 1;
+  int64 lifetime = 2;
+}
+
+message CheckExistsFilesResponse {
+  map<string, bool> filesExistingInfo = 1;
+}
+
+message GetCspFilesRequest {
+  int64 userId = 1;
+  string dateFrom = 2;
+  string dateTo = 3;
+}
+
+message FileListResponse {
+  repeated LoadFileInfo fileInfo = 1;
+}
+
+message LoadFileList {
+  repeated LoadFileMessage GetFilesResponse = 1;
+}
+
+service FileService {
+
+  // получение содержимого файла производиться через отдельный метод.
+  // для преобразования stream File в InputStream используйте
+  // ru.sigma.scp.file.grpc.Utils - Iterator<File>.toInputStream()
+  rpc getFile(ru.sigma.scp.core.api.UUIDMessage) returns(stream LoadFileMessage);
+
+  // Получение атрибутов файла по уникальному идентификатору.
+  rpc getFileAttributes(ru.sigma.scp.core.api.UUIDMessage) returns(FileAttributesMessage);
+
+  // сохранения содержимого файла производиться так же через отдельный метод.
+  // для преобразования stream File в OutputStream используйте
+  // ru.sigma.scp.file.grpc.Utils - FileServiceGrpc.FileServiceStub.saveFile
+  rpc saveFile(stream SaveFileMessage) returns(ru.sigma.scp.core.api.UUIDMessage);
+
+  // Добавление атрибутов файла по UUID.
+  rpc addFileAttributes(FileAttributesRequest) returns(ru.sigma.scp.core.api.UUIDMessage);
+
+  // Получение UUIDs по значению атрибута.
+  rpc getUuidsByAttribute(FileAttributesMessage) returns(ListUuidMessage);
+
+  // Помечает что файл используется и его не надо удалять как временный.
+  rpc removeLifeTime(ru.sigma.scp.core.api.UUIDMessage) returns(google.protobuf.Empty);
+
+  // Удаление файла.
+  rpc deleteFile(ru.sigma.scp.core.api.UUIDMessage) returns(google.protobuf.Empty);
+
+  // Получение расширения по типу контента.
+  rpc getExtensionByContentType(FileContentTypeRequest) returns(FileExtensionResponse);
+
+  // Проверка существования файла.
+  rpc checkExistsFileByUuid(ru.sigma.scp.core.api.UUIDMessage) returns(FilePresentResponse);
+
+  // Добавление файлу цифровой подписи.
+  rpc signFile(SignFileRequest) returns(google.protobuf.Empty);
+
+  // Отказ от подписи файла.
+  rpc refuseToSignFile(RefuseToSignRequest) returns(SignedFileMessage);
+
+  // Получение информации о подписях файла.
+  rpc getSignedFileInfo(ru.sigma.scp.core.api.UUIDMessage) returns(SignedFileMessage);
+
+  // Получение информации о файле (без содержимого)
+  rpc getFileInfo(ru.sigma.scp.core.api.UUIDMessage) returns(FileInfoResponse);
+
+  // Сохранение информации о файле (без содержимого)
+  rpc saveFileInfo(SaveFileInfo) returns(ru.sigma.scp.core.api.UUIDMessage);
+
+  // Получение списка файлов(без содержимого) по списку UUID
+  rpc getFileListByUUIDs(ListUuidMessage) returns(SignedFileListResponse);
+
+  rpc searchFiles(SearchFileRequest) returns(FileInfoListResponse);
+
+  rpc getFiles(FileSearchParamsMessage) returns(stream LoadFileMessage);
+
+  rpc getFilesInfo(FileSearchParamsMessage) returns(FileInfoListResponse);
+
+  rpc patchFile(stream SaveFileMessage) returns(LoadFileInfo);
+
+  rpc removeFileAttributes(RemoveAttributesRequest) returns(google.protobuf.Empty);
+
+  rpc removeFilesLifeTime(ListUuidMessage) returns(google.protobuf.Empty);
+
+  rpc setLifeTime(SetLifetimeRequest) returns(google.protobuf.Empty);
+
+  rpc checkExistsFiles(ListUuidMessage) returns(CheckExistsFilesResponse);
+
+  rpc getCspFiles(GetCspFilesRequest) returns(FileListResponse);
+}
